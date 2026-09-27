@@ -1,35 +1,51 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { useEffect, useState } from 'react';
+import { parsePoeItem } from './utils/itemParser';
+import { ParsedItem } from './types';
 
-function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+function App() {
+  const [itemData, setItemData] = useState<ParsedItem | null>(null);
 
+  useEffect(() => {
+    window.api.onItemCopied((text: string) => {
+      const parsed = parsePoeItem(text);
+      if (parsed) {
+        setItemData(parsed);
+      }
+    });
+  }, []);
+
+  if (!itemData) {
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
-  )
+    <div style={{ padding: '20px', color: '#e0e0e0', background: 'rgba(20, 20, 24, 0.95)', height: '100vh' }}>
+      Awaiting Item... (Hover over an item, press Ctrl+C, then Ctrl+D)
+    </div>
+  );
 }
 
-export default App
+  return (
+    <div style={{ background: '#141418', color: '#e0e0e0', padding: '20px', height: '100vh' }}>
+      <h2 style={{ color: itemData.rarity === 'Unique' ? '#af6025' : '#ffff00' }}>
+        {itemData.name && <div>{itemData.name}</div>}
+        <div>{itemData.baseType}</div>
+      </h2>
+      
+      {itemData.itemLevel && <p>Item Level: {itemData.itemLevel}</p>}
+      
+      {itemData.implicits.length > 0 && (
+        <div style={{ borderBottom: '1px solid #444', paddingBottom: '10px' }}>
+          {itemData.implicits.map((mod, i) => (
+            <div key={i} style={{ color: '#8888ff' }}>{mod}</div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ paddingTop: '10px' }}>
+        {itemData.explicits.map((mod, i) => (
+          <div key={i} style={{ color: '#8888ff' }}>{mod}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default App;
