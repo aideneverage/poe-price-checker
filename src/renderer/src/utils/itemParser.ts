@@ -1,4 +1,5 @@
-import { ParsedItem } from '../types';
+import { ParsedItem, ItemModifier } from '../types';
+import { matchModifierToApiId } from './statMatcher';
 
 export function parsePoeItem(clipboardText: string): ParsedItem | null {
     const cleanText = clipboardText.trim();
@@ -37,8 +38,8 @@ export function parsePoeItem(clipboardText: string): ParsedItem | null {
     const isCorrupted = /^Corrupted$/m.test(cleanText);
 
     // parse modifiers (implicits and explicits) from blocks
-    const implicits: string[] = [];
-    const explicits: string[] = [];
+    const implicits: ItemModifier[] = [];
+    const explicits: ItemModifier[] = [];
 
     // blocks to ignore when looking for explicit modifiers
     const ignoredBlockStarts = [
@@ -67,12 +68,25 @@ export function parsePoeItem(clipboardText: string): ParsedItem | null {
             const enchantMatch = line.match(/(.+?)\s+\(enchant\)$/);
 
             if (implicitMatch) {
-                implicits.push(implicitMatch[1]);
+                implicits.push({
+                    text: implicitMatch[1],
+                    tradeId: null,
+                    value: null
+                });
             } else if (enchantMatch) {
-                implicits.push(enchantMatch[1]); // treat enchants like implicits    
+                implicits.push({
+                    text: enchantMatch[1],
+                    tradeId: null,
+                    value: null
+                }); // treat enchants like implicits    
             } else if (line.trim().length > 0) {
                 // if its in a stat block and has no tag, its explicit
-                explicits.push(line);
+                const apiMatch = matchModifierToApiId(line);
+                explicits.push({
+                    text: line,
+                    tradeId: apiMatch?.id || null,
+                    value: apiMatch?.value || null
+                });
             }
         });
     }
